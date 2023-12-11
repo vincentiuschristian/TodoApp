@@ -78,15 +78,18 @@ class SettingsActivity : AppCompatActivity() {
                 true*/
                 // baru
                 val workManager = WorkManager.getInstance(requireContext())
+
+                val dataBuilder = Data.Builder()
+                    .putString(NOTIFICATION_CHANNEL_ID, channelName)
+                    .build()
+
+                val notificationWorkRequest = PeriodicWorkRequest.Builder(NotificationWorker::class.java,1,
+                    TimeUnit.DAYS)
+                    .setInputData(dataBuilder)
+                    .build()
+
                 if (newValue as Boolean) {
-                    val data = Data.Builder()
-                        .putString(NOTIFICATION_CHANNEL_ID, channelName)
-                        .build()
-                    val periodicWorkRequest = PeriodicWorkRequest.Builder(NotificationWorker::class.java,1,
-                        TimeUnit.DAYS)
-                        .setInputData(data)
-                        .build()
-                    workManager.enqueue(periodicWorkRequest)
+                    workManager.enqueue(notificationWorkRequest)
                 } else {
                     workManager.cancelAllWorkByTag(NotificationWorker::class.java.simpleName)
                 }
