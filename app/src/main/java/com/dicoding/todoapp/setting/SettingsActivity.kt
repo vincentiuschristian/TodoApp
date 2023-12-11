@@ -1,17 +1,20 @@
 package com.dicoding.todoapp.setting
 
 import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.Data
+import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import com.dicoding.todoapp.R
 import com.dicoding.todoapp.notification.NotificationWorker
+import com.dicoding.todoapp.utils.NOTIFICATION_CHANNEL_ID
 import java.util.concurrent.TimeUnit
 
 class SettingsActivity : AppCompatActivity() {
@@ -31,6 +34,7 @@ class SettingsActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_activity)
@@ -51,10 +55,10 @@ class SettingsActivity : AppCompatActivity() {
 
             val prefNotification =
                 findPreference<SwitchPreference>(getString(R.string.pref_key_notify))
-            prefNotification?.setOnPreferenceChangeListener { preference, newValue ->
+            prefNotification?.setOnPreferenceChangeListener { _, newValue ->
                 val channelName = getString(R.string.notify_channel_name)
                 //TODO 13 : Schedule and cancel daily reminder using WorkManager with data channelName
-                val notificationWorkRequest =
+/*                val notificationWorkRequest =
                     PeriodicWorkRequestBuilder<NotificationWorker>(1, TimeUnit.DAYS)
                         .addTag(channelName)
                         .build()
@@ -69,6 +73,22 @@ class SettingsActivity : AppCompatActivity() {
                 } else {
                     workManager.cancelAllWorkByTag(channelName)
                     workManager.pruneWork()
+                }
+
+                true*/
+                // baru
+                val workManager = WorkManager.getInstance(requireContext())
+                if (newValue as Boolean) {
+                    val data = Data.Builder()
+                        .putString(NOTIFICATION_CHANNEL_ID, channelName)
+                        .build()
+                    val periodicWorkRequest = PeriodicWorkRequest.Builder(NotificationWorker::class.java,1,
+                        TimeUnit.DAYS)
+                        .setInputData(data)
+                        .build()
+                    workManager.enqueue(periodicWorkRequest)
+                } else {
+                    workManager.cancelAllWorkByTag(NotificationWorker::class.java.simpleName)
                 }
 
                 true
